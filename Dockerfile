@@ -25,7 +25,6 @@ WORKDIR /app
 
 # 将构建产物/app/main拷贝到运行时的工作目录中
 COPY --from=builder /app/main /app/
-COPY --from=builder /app/assets /app/assets/
 
 # 执行启动命令
 # 写多行独立的CMD命令是错误写法！只有最后一行CMD命令会被执行，之前的都会被忽略，导致业务报错。
