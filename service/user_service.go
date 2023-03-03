@@ -1,13 +1,16 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
 	"wechat-gpt/db/dao"
 	"wechat-gpt/db/model"
 	"wechat-gpt/service/entity"
 	"wechat-gpt/utils"
-	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,6 +23,69 @@ func UserHandler(router *gin.Engine) {
 		httpCode, result := login(c)
 		c.JSON(httpCode, result)
 	})
+
+	router.POST("/chat", func(c *gin.Context) {
+		httpCode, result := chat(c)
+		c.JSON(httpCode, result)
+	})
+}
+
+func chat(c *gin.Context) (int, entity.Response) {
+	var req entity.ChatGptReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println("请求数据错误: ", err)
+		c.String(http.StatusBadRequest, "请求数据错误")
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	fmt.Println("请求数据: ", req)
+
+	params := make(map[string]interface{})
+	params["prompt"] = req.Prompt
+	params["streamed"] = false
+	if req.ParentId != "" {
+		params["parent_id"] = req.ParentId
+	}
+	if req.ConversationId != "" {
+		params["conversation_id"] = req.ConversationId
+	}
+	fmt.Println("发送数据: ", params)
+	bytesData, _ := json.Marshal(params)
+	fmt.Println("发送数据json: ", bytesData)
+	resp, err := http.Post(
+		"https://chatgpt-api.ininpop.com/chatgpt-api/chat",
+		"application/json",
+		bytes.NewReader(bytesData),
+	)
+	if err != nil {
+		err = fmt.Errorf("请求失败: %s", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return http.StatusInternalServerError, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	// 	fmt.Printf("请求成功: %s", resp)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		err = fmt.Errorf("请求失败: %s", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return http.StatusInternalServerError, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	data := make(map[string]interface{})
+	json.Unmarshal(body, &data)
+	fmt.Println("请求成功: ", data)
+	return http.StatusOK, entity.Response{
+		Code: 0,
+		Data: data,
+	}
+	// bytes, _ := json.Marshal(data)
+	// c.JSON(http.StatusOK, string(bytes))
 }
 
 // login 获取并保存用户信息
