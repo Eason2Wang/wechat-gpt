@@ -1,14 +1,11 @@
 package service
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"ininpop-chatgpt/db/dao"
 	"ininpop-chatgpt/db/model"
 	"ininpop-chatgpt/service/entity"
 	"ininpop-chatgpt/utils"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -70,49 +67,6 @@ func login(c *gin.Context) (int, entity.Response) {
 			Data: userInfo,
 		}
 	}
-}
-
-// GetRequestBodyJson 获取JSON请求体参数
-func GetRequestBodyJson(r *http.Request) (map[string]interface{}, error) {
-	decoder := json.NewDecoder(r.Body)
-	body := make(map[string]interface{})
-	if err := decoder.Decode(&body); err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-	return body, nil
-}
-
-func postGetOpenData(appid string, openid string, cloudid string) map[string]interface{} {
-	params := make(map[string]interface{})
-	params["cloudid_list"] = [1]string{cloudid}
-	bytesData, _ := json.Marshal(params)
-	url := fmt.Sprintf("http://api.weixin.qq.com/wxa/getopendata?from_appid=%s&openid=%s", appid, openid)
-	fmt.Println("OpenDataUrl:", url)
-	resp, _ := http.Post(
-		url,
-		"application/json",
-		bytes.NewReader(bytesData),
-	)
-	body, _ := ioutil.ReadAll(resp.Body)
-	bodyMap, err := JsonToMap(string(body))
-	if err == nil {
-		fmt.Println("OpenDataBodyMap:", bodyMap)
-		return bodyMap
-	}
-	return nil
-}
-
-// Convert json string to map
-func JsonToMap(jsonStr string) (map[string]interface{}, error) {
-	m := make(map[string]interface{})
-	err := json.Unmarshal([]byte(jsonStr), &m)
-	if err != nil {
-		fmt.Printf("Unmarshal with error: %+v\n", err)
-		return nil, err
-	}
-
-	return m, nil
 }
 
 // upsertUser 更新或修改用户信息
