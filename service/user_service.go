@@ -78,7 +78,7 @@ func chat(c *gin.Context) (int, entity.Response) {
 	}
 	data := make(map[string]interface{})
 	json.Unmarshal(body, &data)
-	fmt.Println("请求成功: ", data)
+	fmt.Println("请求成功: ", string(body))
 	return http.StatusOK, entity.Response{
 		Code: 0,
 		Data: data,
