@@ -2,10 +2,10 @@ package service
 
 import (
 	"fmt"
-	"ininpop-chatgpt/db/dao"
-	"ininpop-chatgpt/db/model"
-	"ininpop-chatgpt/service/entity"
-	"ininpop-chatgpt/utils"
+	"wechat-gpt/db/dao"
+	"wechat-gpt/db/model"
+	"wechat-gpt/service/entity"
+	"wechat-gpt/utils"
 	"net/http"
 	"time"
 

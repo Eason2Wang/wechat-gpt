@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"ininpop-chatgpt/db/model"
+	"wechat-gpt/db/model"
 )
 
 // UserInterface 用户数据模型接口

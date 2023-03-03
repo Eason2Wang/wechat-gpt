@@ -1,8 +1,8 @@
 package dao
 
 import (
-	"ininpop-chatgpt/db"
-	"ininpop-chatgpt/db/model"
+	"wechat-gpt/db"
+	"wechat-gpt/db/model"
 	"time"
 )
 

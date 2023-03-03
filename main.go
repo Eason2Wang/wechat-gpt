@@ -3,17 +3,22 @@ package main
 import (
 	"bytes"
 	"context"
-	"ininpop-chatgpt/service"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+	"wechat-gpt/db"
+	"wechat-gpt/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	if err := db.Init(); err != nil {
+		panic(fmt.Sprintf("mysql init failed with %+v", err))
+	}
 	initGinServer()
 }
 
@@ -22,8 +27,6 @@ func initGinServer() {
 	gin.SetMode(gin.DebugMode)
 	router = gin.Default()
 
-	service.ChatGptHandler(router)
-	service.ChatGptStreamedHandler(router)
 	service.UserHandler(router)
 
 	srv := &http.Server{

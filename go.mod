@@ -1,4 +1,4 @@
-module ininpop-chatgpt
+module wechat-gpt
 
 go 1.16
 
