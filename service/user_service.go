@@ -44,7 +44,6 @@ func chat(c *gin.Context) (int, entity.Response) {
 
 	params := make(map[string]interface{})
 	params["prompt"] = req.Prompt
-	params["streamed"] = false
 	if req.ParentId != "" {
 		params["parent_id"] = req.ParentId
 	}
