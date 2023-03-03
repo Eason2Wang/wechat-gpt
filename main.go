@@ -27,7 +27,7 @@ func initGinServer() {
 	service.UserHandler(router)
 
 	srv := &http.Server{
-		Addr:    ":5001",
+		Addr:    ":80",
 		Handler: router,
 	}
 
