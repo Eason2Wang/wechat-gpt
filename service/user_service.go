@@ -20,6 +20,11 @@ import (
 // UserHandler 用户接口
 func UserHandler(router *gin.Engine) {
 
+	router.POST("/api/checkExist", func(c *gin.Context) {
+		httpCode, result := checkExist(c)
+		c.JSON(httpCode, result)
+	})
+
 	router.POST("/api/updateInfo", func(c *gin.Context) {
 		httpCode, result := updateInfo(c)
 		c.JSON(httpCode, result)
@@ -86,7 +91,51 @@ func chat(c *gin.Context) (int, entity.Response) {
 	}
 }
 
-// login 获取并保存用户信息
+// checkExist 检查用户是否存在
+func checkExist(c *gin.Context) (int, entity.Response) {
+	var req entity.UpdateInfoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	header := c.Request.Header
+	fmt.Println("Header全部数据:", header)
+	var appid string
+	if header["X-Wx-From-Appid"] == nil {
+		appid = ""
+	} else {
+		appid = header["X-Wx-From-Appid"][0]
+	}
+	fmt.Println("appid:", appid)
+	var openid string
+	if header["X-Wx-From-Openid"] != nil {
+		openid = header["X-Wx-From-Openid"][0]
+	} else if header["X-Wx-Openid"] != nil {
+		openid = header["X-Wx-Openid"][0]
+	}
+	fmt.Println("openid:", openid)
+	_, err := dao.UserImp.GetUserByOpenId(openid)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return http.StatusOK, entity.Response{
+			Code: entity.DatabaseError,
+			Data: nil,
+		}
+	} else if err == gorm.ErrRecordNotFound {
+		return http.StatusOK, entity.Response{
+			Code: entity.NotFound,
+			Data: nil,
+		}
+	} else {
+		return http.StatusOK, entity.Response{
+			Code: entity.Success,
+			Data: nil,
+		}
+	}
+}
+
+// updateInfo 获取并保存用户信息
 func updateInfo(c *gin.Context) (int, entity.Response) {
 	var req entity.UpdateInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
