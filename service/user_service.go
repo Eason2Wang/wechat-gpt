@@ -155,29 +155,14 @@ func generateUser(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: err.Error(),
 		}
 	}
-
-	var userInfo *model.UserModel
-
 	openid := getOpenId(c)
-	userInfo, err := generate(&req, openid)
-	if err != nil {
+	_, err := dao.UserImp.GetUserByOpenId(openid)
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
 			Code:     utils.SERVER_DB_ERR,
 			ErrorMsg: err.Error(),
 		}
-	} else {
-		return http.StatusOK, entity.Response{
-			Code: 0,
-			Data: userInfo,
-		}
-	}
-}
-
-func generate(req *entity.GenerateUserRequest, openid string) (*model.UserModel, error) {
-	_, err := dao.UserImp.GetUserByOpenId(openid)
-	if err != nil {
-		return nil, err
-	} else {
+	} else if err == gorm.ErrRecordNotFound {
 		user := model.UserModel{
 			Id:         uuid.New(),
 			OpenId:     openid,
@@ -195,9 +180,20 @@ func generate(req *entity.GenerateUserRequest, openid string) (*model.UserModel,
 
 		err = dao.UserImp.InsertUser(&user)
 		if err != nil {
-			return nil, err
+			return http.StatusOK, entity.Response{
+				Code:     utils.SERVER_DB_ERR,
+				ErrorMsg: err.Error(),
+			}
 		}
-		return &user, nil
+		return http.StatusOK, entity.Response{
+			Code: 0,
+			Data: user,
+		}
+	} else {
+		return http.StatusOK, entity.Response{
+			Code: utils.USER_ALREADY_EXIST,
+			Data: nil,
+		}
 	}
 }
 
