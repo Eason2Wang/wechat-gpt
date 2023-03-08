@@ -19,12 +19,13 @@ import (
 
 // UserHandler 用户接口
 func UserHandler(router *gin.Engine) {
-	router.POST("/login", func(c *gin.Context) {
-		httpCode, result := login(c)
+
+	router.POST("/api/updateInfo", func(c *gin.Context) {
+		httpCode, result := updateInfo(c)
 		c.JSON(httpCode, result)
 	})
 
-	router.POST("/chat", func(c *gin.Context) {
+	router.POST("/api/chat", func(c *gin.Context) {
 		httpCode, result := chat(c)
 		c.JSON(httpCode, result)
 	})
@@ -83,13 +84,11 @@ func chat(c *gin.Context) (int, entity.Response) {
 		Code: 0,
 		Data: string(body),
 	}
-	// bytes, _ := json.Marshal(data)
-	// c.JSON(http.StatusOK, string(bytes))
 }
 
 // login 获取并保存用户信息
-func login(c *gin.Context) (int, entity.Response) {
-	var req entity.LoginRequest
+func updateInfo(c *gin.Context) (int, entity.Response) {
+	var req entity.UpdateInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
 			Code:     utils.SERVER_MISSING_PARAMS,
@@ -118,9 +117,7 @@ func login(c *gin.Context) (int, entity.Response) {
 		openid = req.OpenId
 	}
 	fmt.Println("openid:", openid)
-	userInfo, err := upsertUser(&entity.UserInfo{
-		OpenId: openid,
-	})
+	userInfo, err := upsertUser(&req, openid)
 	if err != nil {
 		return http.StatusOK, entity.Response{
 			Code:     utils.SERVER_DB_ERR,
@@ -135,44 +132,40 @@ func login(c *gin.Context) (int, entity.Response) {
 }
 
 // upsertUser 更新或修改用户信息
-func upsertUser(userInfo *entity.UserInfo) (*model.UserModel, error) {
-	currentUser, err := dao.UserImp.GetUserByOpenId(userInfo.OpenId)
+func upsertUser(req *entity.UpdateInfoRequest, openid string) (*model.UserModel, error) {
+	currentUser, err := dao.UserImp.GetUserByOpenId(openid)
 	var user model.UserModel
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	} else if err == gorm.ErrRecordNotFound {
 		user = model.UserModel{
-			Id:        uuid.New(),
-			OpenId:    userInfo.OpenId,
-			AvatarUrl: userInfo.AvatarUrl,
-			City:      userInfo.City,
-			Country:   userInfo.Country,
-			Gender:    userInfo.Gender,
-			Language:  userInfo.Language,
-			NickName:  userInfo.NickName,
-			Province:  userInfo.Province,
-			AppId:     userInfo.WaterMark.AppId,
-			Follow:    1,
-			Subscribe: 0,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Id:         uuid.New(),
+			OpenId:     openid,
+			AvatarUrl:  req.AvatarUrl,
+			City:       req.City,
+			Country:    req.Country,
+			Gender:     req.Gender,
+			Language:   req.Language,
+			NickName:   req.NickName,
+			Province:   req.Province,
+			UsageCount: 10,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
 		}
 	} else {
 		user = model.UserModel{
-			Id:        currentUser.Id,
-			OpenId:    currentUser.OpenId,
-			AvatarUrl: userInfo.AvatarUrl,
-			City:      userInfo.City,
-			Country:   userInfo.Country,
-			Gender:    userInfo.Gender,
-			Language:  userInfo.Language,
-			NickName:  userInfo.NickName,
-			Province:  userInfo.Province,
-			AppId:     userInfo.WaterMark.AppId,
-			Follow:    currentUser.Follow,
-			Subscribe: currentUser.Subscribe,
-			CreatedAt: currentUser.CreatedAt,
-			UpdatedAt: time.Now(),
+			Id:         currentUser.Id,
+			OpenId:     currentUser.OpenId,
+			AvatarUrl:  req.AvatarUrl,
+			City:       req.City,
+			Country:    req.Country,
+			Gender:     req.Gender,
+			Language:   req.Language,
+			NickName:   req.NickName,
+			Province:   req.Province,
+			UsageCount: req.UsageCount,
+			CreatedAt:  currentUser.CreatedAt,
+			UpdatedAt:  time.Now(),
 		}
 	}
 	err = dao.UserImp.UpsertUser(&user)
