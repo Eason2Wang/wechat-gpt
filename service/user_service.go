@@ -25,8 +25,13 @@ func UserHandler(router *gin.Engine) {
 		c.JSON(httpCode, result)
 	})
 
+	router.POST("/api/generateUser", func(c *gin.Context) {
+		httpCode, result := generateUser(c)
+		c.JSON(httpCode, result)
+	})
+
 	router.POST("/api/updateInfo", func(c *gin.Context) {
-		httpCode, result := updateInfo(c)
+		httpCode, result := updateNickNameAndAvatar(c)
 		c.JSON(httpCode, result)
 	})
 
@@ -91,15 +96,7 @@ func chat(c *gin.Context) (int, entity.Response) {
 	}
 }
 
-// checkExist 检查用户是否存在
-func checkExist(c *gin.Context) (int, entity.Response) {
-	var req entity.UpdateInfoRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		return http.StatusBadRequest, entity.Response{
-			Code:     utils.SERVER_MISSING_PARAMS,
-			ErrorMsg: err.Error(),
-		}
-	}
+func getOpenId(c *gin.Context) string {
 	header := c.Request.Header
 	fmt.Println("Header全部数据:", header)
 	var appid string
@@ -116,43 +113,42 @@ func checkExist(c *gin.Context) (int, entity.Response) {
 		openid = header["X-Wx-Openid"][0]
 	}
 	fmt.Println("openid:", openid)
+	return openid
+}
+
+// checkExist 检查用户是否存在
+func checkExist(c *gin.Context) (int, entity.Response) {
+	var req entity.GenerateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	openid := getOpenId(c)
 	currentUser, err := dao.UserImp.GetUserByOpenId(openid)
-	var user model.UserModel
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
-			Code: entity.DatabaseError,
+			Code: utils.SERVER_DB_ERR,
 			Data: nil,
 		}
 	} else if err == gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
-			Code: entity.NotFound,
+			Code: utils.USER_NOT_FOUNT,
 			Data: nil,
 		}
 	} else {
-		user = model.UserModel{
-			Id:         currentUser.Id,
-			OpenId:     currentUser.OpenId,
-			AvatarUrl:  req.AvatarUrl,
-			City:       req.City,
-			Country:    req.Country,
-			Gender:     req.Gender,
-			Language:   req.Language,
-			NickName:   req.NickName,
-			Province:   req.Province,
-			UsageCount: req.UsageCount,
-			CreatedAt:  currentUser.CreatedAt,
-			UpdatedAt:  time.Now(),
-		}
+		currentUser.OpenId = ""
 		return http.StatusOK, entity.Response{
-			Code: entity.Success,
-			Data: user,
+			Code: utils.SUCCESS,
+			Data: currentUser,
 		}
 	}
 }
 
-// updateInfo 获取并保存用户信息
-func updateInfo(c *gin.Context) (int, entity.Response) {
-	var req entity.UpdateInfoRequest
+// generateUser 生成新用户
+func generateUser(c *gin.Context) (int, entity.Response) {
+	var req entity.GenerateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
 			Code:     utils.SERVER_MISSING_PARAMS,
@@ -162,26 +158,8 @@ func updateInfo(c *gin.Context) (int, entity.Response) {
 
 	var userInfo *model.UserModel
 
-	header := c.Request.Header
-	fmt.Println("Header全部数据:", header)
-	var appid string
-	if header["X-Wx-From-Appid"] == nil {
-		appid = ""
-	} else {
-		appid = header["X-Wx-From-Appid"][0]
-	}
-	fmt.Println("appid:", appid)
-	var openid string
-	if header["X-Wx-From-Openid"] != nil {
-		openid = header["X-Wx-From-Openid"][0]
-	} else if header["X-Wx-Openid"] != nil {
-		openid = header["X-Wx-Openid"][0]
-	} else {
-		//只有在测试环境下才有这个参数
-		openid = req.OpenId
-	}
-	fmt.Println("openid:", openid)
-	userInfo, err := upsertUser(&req, openid)
+	openid := getOpenId(c)
+	userInfo, err := generate(&req, openid)
 	if err != nil {
 		return http.StatusOK, entity.Response{
 			Code:     utils.SERVER_DB_ERR,
@@ -195,14 +173,12 @@ func updateInfo(c *gin.Context) (int, entity.Response) {
 	}
 }
 
-// upsertUser 更新或修改用户信息
-func upsertUser(req *entity.UpdateInfoRequest, openid string) (*model.UserModel, error) {
-	currentUser, err := dao.UserImp.GetUserByOpenId(openid)
-	var user model.UserModel
-	if err != nil && err != gorm.ErrRecordNotFound {
+func generate(req *entity.GenerateUserRequest, openid string) (*model.UserModel, error) {
+	_, err := dao.UserImp.GetUserByOpenId(openid)
+	if err != nil {
 		return nil, err
-	} else if err == gorm.ErrRecordNotFound {
-		user = model.UserModel{
+	} else {
+		user := model.UserModel{
 			Id:         uuid.New(),
 			OpenId:     openid,
 			AvatarUrl:  req.AvatarUrl,
@@ -216,25 +192,48 @@ func upsertUser(req *entity.UpdateInfoRequest, openid string) (*model.UserModel,
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
 		}
-	} else {
-		user = model.UserModel{
-			Id:         currentUser.Id,
-			OpenId:     currentUser.OpenId,
-			AvatarUrl:  req.AvatarUrl,
-			City:       req.City,
-			Country:    req.Country,
-			Gender:     req.Gender,
-			Language:   req.Language,
-			NickName:   req.NickName,
-			Province:   req.Province,
-			UsageCount: req.UsageCount,
-			CreatedAt:  currentUser.CreatedAt,
-			UpdatedAt:  time.Now(),
+
+		err = dao.UserImp.InsertUser(&user)
+		if err != nil {
+			return nil, err
+		}
+		return &user, nil
+	}
+}
+
+// updateNickNameAndAvatar
+func updateNickNameAndAvatar(c *gin.Context) (int, entity.Response) {
+	var req entity.GenerateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
 		}
 	}
-	err = dao.UserImp.UpsertUser(&user)
+	openid := getOpenId(c)
+	currentUser, err := dao.UserImp.GetUserByOpenId(openid)
 	if err != nil {
-		return nil, err
+		return http.StatusOK, entity.Response{
+			Code:     utils.SERVER_DB_ERR,
+			ErrorMsg: err.Error(),
+		}
+	} else {
+		var avatarUrl string
+		if req.AvatarUrl == "" {
+			avatarUrl = currentUser.AvatarUrl
+		} else {
+			avatarUrl = req.AvatarUrl
+		}
+		err = dao.UserImp.UpdateNickNameAndAvatar(openid, req.NickName, avatarUrl)
+		if err != nil {
+			return http.StatusOK, entity.Response{
+				Code:     utils.SERVER_DB_ERR,
+				ErrorMsg: err.Error(),
+			}
+		}
+		return http.StatusOK, entity.Response{
+			Code: 0,
+			Data: nil,
+		}
 	}
-	return &user, nil
 }

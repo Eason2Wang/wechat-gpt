@@ -1,7 +1,6 @@
 package entity
 
 type UpdateInfoRequest struct {
-	OpenId     string `json:"openId"`
 	AvatarUrl  string `json:"avatarUrl"`
 	City       string `json:"city"`
 	Country    string `json:"country"`

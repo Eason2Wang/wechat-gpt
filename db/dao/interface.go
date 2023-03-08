@@ -8,8 +8,8 @@ import (
 type UserInterface interface {
 	GetUserList() ([]model.UserModel, error)
 	GetUserByOpenId(openId string) (*model.UserModel, error)
-	UpsertUser(user *model.UserModel) error
-	UpdateSubscribe(openId string, subscribe uint) error
+	InsertUser(user *model.UserModel) error
+	UpdateNickNameAndAvatar(openId string, nickName string, avatar string) error
 	UpdateFollow(openId string, follow uint) error
 	UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error
 }

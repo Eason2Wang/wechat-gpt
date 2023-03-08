@@ -1,9 +1,9 @@
 package dao
 
 import (
+	"time"
 	"wechat-gpt/db"
 	"wechat-gpt/db/model"
-	"time"
 )
 
 const userTableName = "users"
@@ -20,8 +20,8 @@ func (imp *UserInterfaceImp) GetUserList() ([]model.UserModel, error) {
 	return users, err
 }
 
-// UpsertUser 更新/写入user
-func (imp *UserInterfaceImp) UpsertUser(user *model.UserModel) error {
+// InsertUser 更新/写入user
+func (imp *UserInterfaceImp) InsertUser(user *model.UserModel) error {
 	cli := db.Get()
 	return cli.Table(userTableName).Save(user).Error
 }
@@ -36,9 +36,9 @@ func (imp *UserInterfaceImp) GetUserByOpenId(openId string) (*model.UserModel, e
 }
 
 // UpdateSubscribe 更新subscribe
-func (imp *UserInterfaceImp) UpdateSubscribe(openId string, subscribe uint) error {
+func (imp *UserInterfaceImp) UpdateNickNameAndAvatar(openId string, nickName string, avatar string) error {
 	cli := db.Get()
-	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"subscribe": subscribe, "updated_at": time.Now()}).Error
+	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"nick_name": nickName, "avatar_url": avatar, "updated_at": time.Now()}).Error
 }
 
 // UpdateFollow 更新follow
