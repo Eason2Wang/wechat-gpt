@@ -130,12 +130,12 @@ func checkExist(c *gin.Context) (int, entity.Response) {
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
 			Code: utils.SERVER_DB_ERR,
-			Data: nil,
+			ErrorMsg: err.Error(),
 		}
 	} else if err == gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
 			Code: utils.USER_NOT_FOUNT,
-			Data: nil,
+			ErrorMsg: "user not found",
 		}
 	} else {
 		currentUser.OpenId = ""
@@ -192,7 +192,7 @@ func generateUser(c *gin.Context) (int, entity.Response) {
 	} else {
 		return http.StatusOK, entity.Response{
 			Code: utils.USER_ALREADY_EXIST,
-			Data: nil,
+			ErrorMsg: "user already exist",
 		}
 	}
 }
