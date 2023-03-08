@@ -116,7 +116,8 @@ func checkExist(c *gin.Context) (int, entity.Response) {
 		openid = header["X-Wx-Openid"][0]
 	}
 	fmt.Println("openid:", openid)
-	_, err := dao.UserImp.GetUserByOpenId(openid)
+	currentUser, err := dao.UserImp.GetUserByOpenId(openid)
+	var user model.UserModel
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
 			Code: entity.DatabaseError,
@@ -128,9 +129,23 @@ func checkExist(c *gin.Context) (int, entity.Response) {
 			Data: nil,
 		}
 	} else {
+		user = model.UserModel{
+			Id:         currentUser.Id,
+			OpenId:     currentUser.OpenId,
+			AvatarUrl:  req.AvatarUrl,
+			City:       req.City,
+			Country:    req.Country,
+			Gender:     req.Gender,
+			Language:   req.Language,
+			NickName:   req.NickName,
+			Province:   req.Province,
+			UsageCount: req.UsageCount,
+			CreatedAt:  currentUser.CreatedAt,
+			UpdatedAt:  time.Now(),
+		}
 		return http.StatusOK, entity.Response{
 			Code: entity.Success,
-			Data: nil,
+			Data: user,
 		}
 	}
 }
