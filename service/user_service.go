@@ -118,7 +118,7 @@ func getOpenId(c *gin.Context) string {
 
 // checkExist 检查用户是否存在
 func checkExist(c *gin.Context) (int, entity.Response) {
-	var req entity.GenerateUserRequest
+	var req entity.CheckExistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
 			Code:     utils.SERVER_MISSING_PARAMS,
@@ -199,7 +199,7 @@ func generateUser(c *gin.Context) (int, entity.Response) {
 
 // updateNickNameAndAvatar
 func updateNickNameAndAvatar(c *gin.Context) (int, entity.Response) {
-	var req entity.GenerateUserRequest
+	var req entity.UpdateInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
 			Code:     utils.SERVER_MISSING_PARAMS,
