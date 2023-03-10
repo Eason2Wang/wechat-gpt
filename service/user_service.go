@@ -206,6 +206,7 @@ func updateRemainUsage(c *gin.Context) (int, entity.Response) {
 			}
 		}
 		user.OpenId = ""
+		user.RemainUsageCount = req.RemainUsageCount
 		return http.StatusOK, entity.Response{
 			Code: 0,
 			Data: user,
