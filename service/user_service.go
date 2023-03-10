@@ -65,7 +65,7 @@ func getOpenId(c *gin.Context) string {
 
 // checkExist 检查用户是否存在
 func checkExist(c *gin.Context) (int, entity.Response) {
-	var req entity.CheckExistRequest
+	var req entity.EmptyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
 			Code:     utils.SERVER_MISSING_PARAMS,
@@ -76,12 +76,12 @@ func checkExist(c *gin.Context) (int, entity.Response) {
 	currentUser, err := dao.UserImp.GetUserByOpenId(openid)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
-			Code: utils.SERVER_DB_ERR,
+			Code:     utils.SERVER_DB_ERR,
 			ErrorMsg: err.Error(),
 		}
 	} else if err == gorm.ErrRecordNotFound {
 		return http.StatusOK, entity.Response{
-			Code: utils.USER_NOT_FOUNT,
+			Code:     utils.USER_NOT_FOUNT,
 			ErrorMsg: "user not found",
 		}
 	} else {
@@ -138,7 +138,7 @@ func generateUser(c *gin.Context) (int, entity.Response) {
 		}
 	} else {
 		return http.StatusOK, entity.Response{
-			Code: utils.USER_ALREADY_EXIST,
+			Code:     utils.USER_ALREADY_EXIST,
 			ErrorMsg: "user already exist",
 		}
 	}
@@ -212,7 +212,7 @@ func updateUsage(c *gin.Context) (int, entity.Response) {
 }
 
 func getUserInfo(c *gin.Context) (int, entity.Response) {
-	var req entity.UpdateInfoRequest
+	var req entity.EmptyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
 			Code:     utils.SERVER_MISSING_PARAMS,
@@ -227,13 +227,6 @@ func getUserInfo(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: err.Error(),
 		}
 	} else {
-		err = dao.UserImp.UpdateUsage(openid, req.UsageCount)
-		if err != nil {
-			return http.StatusOK, entity.Response{
-				Code:     utils.SERVER_DB_ERR,
-				ErrorMsg: err.Error(),
-			}
-		}
 		user.OpenId = ""
 		return http.StatusOK, entity.Response{
 			Code: 0,
@@ -241,4 +234,3 @@ func getUserInfo(c *gin.Context) (int, entity.Response) {
 		}
 	}
 }
-
