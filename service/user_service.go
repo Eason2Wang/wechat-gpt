@@ -33,7 +33,7 @@ func UserHandler(router *gin.Engine) {
 	})
 
 	router.POST("/api/updateUsage", func(c *gin.Context) {
-		httpCode, result := updateUsage(c)
+		httpCode, result := updateRemainUsage(c)
 		c.JSON(httpCode, result)
 	})
 
@@ -111,18 +111,19 @@ func generateUser(c *gin.Context) (int, entity.Response) {
 		}
 	} else if err == gorm.ErrRecordNotFound {
 		user := model.UserModel{
-			Id:         uuid.New(),
-			OpenId:     openid,
-			AvatarUrl:  req.AvatarUrl,
-			City:       req.City,
-			Country:    req.Country,
-			Gender:     req.Gender,
-			Language:   req.Language,
-			NickName:   req.NickName,
-			Province:   req.Province,
-			UsageCount: 10,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
+			Id:               uuid.New(),
+			OpenId:           openid,
+			AvatarUrl:        req.AvatarUrl,
+			City:             req.City,
+			Country:          req.Country,
+			Gender:           req.Gender,
+			Language:         req.Language,
+			NickName:         req.NickName,
+			Province:         req.Province,
+			RemainUsageCount: 10,
+			TotalUsageCount:  10,
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
 		}
 
 		err = dao.UserImp.InsertUser(&user)
@@ -181,7 +182,7 @@ func updateNickNameAndAvatar(c *gin.Context) (int, entity.Response) {
 	}
 }
 
-func updateUsage(c *gin.Context) (int, entity.Response) {
+func updateRemainUsage(c *gin.Context) (int, entity.Response) {
 	var req entity.UpdateInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		return http.StatusBadRequest, entity.Response{
@@ -197,7 +198,7 @@ func updateUsage(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: err.Error(),
 		}
 	} else {
-		err = dao.UserImp.UpdateUsage(openid, req.UsageCount)
+		err = dao.UserImp.UpdateRemainUsage(openid, req.RemainUsageCount)
 		if err != nil {
 			return http.StatusOK, entity.Response{
 				Code:     utils.SERVER_DB_ERR,

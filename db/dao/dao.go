@@ -42,9 +42,9 @@ func (imp *UserInterfaceImp) UpdateNickNameAndAvatar(openId string, nickName str
 }
 
 // UpdateFollow 更新follow
-func (imp *UserInterfaceImp) UpdateUsage(openId string, usage int64) error {
+func (imp *UserInterfaceImp) UpdateRemainUsage(openId string, usage int64) error {
 	cli := db.Get()
-	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"usage_count": usage, "updated_at": time.Now()}).Error
+	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"remain_usage_count": usage, "updated_at": time.Now()}).Error
 }
 
 func (imp *UserInterfaceImp) UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error {

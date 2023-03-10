@@ -10,7 +10,7 @@ type UserInterface interface {
 	GetUserByOpenId(openId string) (*model.UserModel, error)
 	InsertUser(user *model.UserModel) error
 	UpdateNickNameAndAvatar(openId string, nickName string, avatar string) error
-	UpdateUsage(openId string, usage int64) error
+	UpdateRemainUsage(openId string, usage int64) error
 	UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error
 }
 
