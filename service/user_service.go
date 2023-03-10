@@ -190,7 +190,7 @@ func updateUsage(c *gin.Context) (int, entity.Response) {
 		}
 	}
 	openid := getOpenId(c)
-	_, err := dao.UserImp.GetUserByOpenId(openid)
+	user, err := dao.UserImp.GetUserByOpenId(openid)
 	if err != nil {
 		return http.StatusOK, entity.Response{
 			Code:     utils.SERVER_DB_ERR,
@@ -204,9 +204,10 @@ func updateUsage(c *gin.Context) (int, entity.Response) {
 				ErrorMsg: err.Error(),
 			}
 		}
+		user.OpenId = ""
 		return http.StatusOK, entity.Response{
 			Code: 0,
-			Data: nil,
+			Data: user,
 		}
 	}
 }
