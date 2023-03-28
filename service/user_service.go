@@ -120,8 +120,8 @@ func generateUser(c *gin.Context) (int, entity.Response) {
 			Language:         req.Language,
 			NickName:         req.NickName,
 			Province:         req.Province,
-			RemainUsageCount: 10,
-			TotalUsageCount:  10,
+			RemainUsageCount: 5,
+			TotalUsageCount:  5,
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
