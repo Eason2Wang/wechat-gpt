@@ -284,9 +284,17 @@ func checkText(c *gin.Context) (int, entity.Response) {
 	}
 	if textScanResponse.GetHttpStatus() != 200 {
 		fmt.Println("response not success. status:" + strconv.Itoa(textScanResponse.GetHttpStatus()))
+		return http.StatusOK, entity.Response{
+			Code:     utils.ALIYUN_GREEN_ERR,
+			ErrorMsg: "response not success. status:" + strconv.Itoa(textScanResponse.GetHttpStatus()),
+		}
 	}
 	fmt.Println(textScanResponse.GetHttpContentString())
+	data := make(map[string]interface{})
+	json.Unmarshal(textScanResponse.GetHttpContentBytes(), &data)
+	fmt.Println(data)
 	return http.StatusOK, entity.Response{
 		Code: 0,
+		Data: data,
 	}
 }
