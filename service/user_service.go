@@ -289,7 +289,6 @@ func checkText(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: "response not success. status:" + strconv.Itoa(textScanResponse.GetHttpStatus()),
 		}
 	}
-	fmt.Println(textScanResponse.GetHttpContentString())
 	data := make(map[string]interface{})
 	json.Unmarshal(textScanResponse.GetHttpContentBytes(), &data)
 	fmt.Println(data)
