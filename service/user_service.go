@@ -1,14 +1,17 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 	"wechat-gpt/db/dao"
 	"wechat-gpt/db/model"
 	"wechat-gpt/service/entity"
 	"wechat-gpt/utils"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/green"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -39,6 +42,11 @@ func UserHandler(router *gin.Engine) {
 
 	router.POST("/api/getUserInfo", func(c *gin.Context) {
 		httpCode, result := getUserInfo(c)
+		c.JSON(httpCode, result)
+	})
+
+	router.POST("/api/checkText", func(c *gin.Context) {
+		httpCode, result := checkText(c)
 		c.JSON(httpCode, result)
 	})
 }
@@ -235,5 +243,49 @@ func getUserInfo(c *gin.Context) (int, entity.Response) {
 			Code: 0,
 			Data: user,
 		}
+	}
+}
+
+func checkText(c *gin.Context) (int, entity.Response) {
+	var req entity.CheckTextRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	client, _err := green.NewClientWithAccessKey("cn-shenzhen", "LTAI5tQvokTmDWBvgUEyFktQ", "Cl3Z4TgPMMrtiYACPLZ8STOCab6d96")
+	if _err != nil {
+		fmt.Println(_err.Error())
+		return http.StatusOK, entity.Response{
+			Code:     utils.ALIYUN_GREEN_ERR,
+			ErrorMsg: _err.Error(),
+		}
+	}
+	task := map[string]interface{}{"content": req.Text}
+	// scenes：检测场景，唯一取值：antispam。
+	content, _ := json.Marshal(
+		map[string]interface{}{
+			"scenes": [...]string{"antispam"},
+			"tasks":  [...]map[string]interface{}{task},
+		},
+	)
+
+	textScanRequest := green.CreateTextScanRequest()
+	textScanRequest.SetContent(content)
+	textScanResponse, err := client.TextScan(textScanRequest)
+	if err != nil {
+		fmt.Println(err.Error())
+		return http.StatusOK, entity.Response{
+			Code:     utils.ALIYUN_GREEN_ERR,
+			ErrorMsg: _err.Error(),
+		}
+	}
+	if textScanResponse.GetHttpStatus() != 200 {
+		fmt.Println("response not success. status:" + strconv.Itoa(textScanResponse.GetHttpStatus()))
+	}
+	fmt.Println(textScanResponse.GetHttpContentString())
+	return http.StatusOK, entity.Response{
+		Code: 0,
 	}
 }
