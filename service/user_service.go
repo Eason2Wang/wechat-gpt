@@ -94,7 +94,6 @@ func checkExist(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: "user not found",
 		}
 	} else {
-		currentUser.OpenId = ""
 		return http.StatusOK, entity.Response{
 			Code: utils.SUCCESS,
 			Data: currentUser,
@@ -214,7 +213,6 @@ func updateRemainUsage(c *gin.Context) (int, entity.Response) {
 				ErrorMsg: err.Error(),
 			}
 		}
-		user.OpenId = ""
 		user.RemainUsageCount = req.RemainUsageCount
 		return http.StatusOK, entity.Response{
 			Code: 0,
@@ -239,7 +237,6 @@ func getUserInfo(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: err.Error(),
 		}
 	} else {
-		user.OpenId = ""
 		return http.StatusOK, entity.Response{
 			Code: 0,
 			Data: user,
