@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 	"wechat-gpt/db/dao"
@@ -254,7 +255,7 @@ func checkText(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: err.Error(),
 		}
 	}
-	client, _err := green.NewClientWithAccessKey("cn-shenzhen", "LTAI5tQvokTmDWBvgUEyFktQ", "Cl3Z4TgPMMrtiYACPLZ8STOCab6d96")
+	client, _err := green.NewClientWithAccessKey("cn-shenzhen", os.Getenv("ALIYUN_ACCESS_KEY"), os.Getenv("ALIYUN_ACCESS_SECRET"))
 	if _err != nil {
 		fmt.Println(_err.Error())
 		return http.StatusOK, entity.Response{
