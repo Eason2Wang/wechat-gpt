@@ -12,6 +12,7 @@ import (
 	"wechat-gpt/service/entity"
 	"wechat-gpt/utils"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alimt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/green"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -48,6 +49,11 @@ func UserHandler(router *gin.Engine) {
 
 	router.POST("/api/checkText", func(c *gin.Context) {
 		httpCode, result := checkText(c)
+		c.JSON(httpCode, result)
+	})
+
+	router.POST("/api/translate", func(c *gin.Context) {
+		httpCode, result := translate(c)
 		c.JSON(httpCode, result)
 	})
 }
@@ -252,7 +258,10 @@ func checkText(c *gin.Context) (int, entity.Response) {
 			ErrorMsg: err.Error(),
 		}
 	}
-	client, _err := green.NewClientWithAccessKey("cn-shenzhen", os.Getenv("ALIYUN_ACCESS_KEY"), os.Getenv("ALIYUN_ACCESS_SECRET"))
+	client, _err := green.NewClientWithAccessKey(
+		"cn-shenzhen",
+		os.Getenv("ALIYUN_ACCESS_KEY"),
+		os.Getenv("ALIYUN_ACCESS_SECRET"))
 	if _err != nil {
 		fmt.Println(_err.Error())
 		return http.StatusOK, entity.Response{
@@ -288,6 +297,62 @@ func checkText(c *gin.Context) (int, entity.Response) {
 	}
 	data := make(map[string]interface{})
 	json.Unmarshal(textScanResponse.GetHttpContentBytes(), &data)
+	fmt.Println(data)
+	return http.StatusOK, entity.Response{
+		Code: 0,
+		Data: data,
+	}
+}
+
+func translate(c *gin.Context) (int, entity.Response) {
+	var req entity.TranslateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	// 创建ecsClient实例
+	alimtClient, err := alimt.NewClientWithAccessKey(
+		"cn-hangzhou",                     // 地域ID
+		os.Getenv("ALIYUN_ACCESS_KEY"),    // 您的Access Key ID
+		os.Getenv("ALIYUN_ACCESS_SECRET")) // 您的Access Key Secret
+	if err != nil {
+		fmt.Println(err.Error())
+		return http.StatusOK, entity.Response{
+			Code:     utils.ALIYUN_TRANSLATE_ERR,
+			ErrorMsg: err.Error(),
+		}
+	}
+	// 创建API请求并设置参数
+	request := alimt.CreateTranslateECommerceRequest()
+	// 等价于 request.PageSize = "10"
+	request.Method = "POST"                 //设置请求
+	request.FormatType = "text"             //翻译文本的格式
+	request.SourceLanguage = req.SourceLang //源语言
+	request.SourceText = req.Text           //原文
+	request.TargetLanguage = req.TargetLang //目标语言
+	request.Scene = "general"               // 通用版本默认是：general
+	// 发起请求并处理异常
+	response, err := alimtClient.TranslateECommerce(request)
+	if err != nil {
+		fmt.Println(err.Error())
+		return http.StatusOK, entity.Response{
+			Code:     utils.ALIYUN_TRANSLATE_ERR,
+			ErrorMsg: err.Error(),
+		}
+	}
+	fmt.Println(response)
+
+	if response.GetHttpStatus() != 200 {
+		fmt.Println("response not success. status:" + strconv.Itoa(response.GetHttpStatus()))
+		return http.StatusOK, entity.Response{
+			Code:     utils.ALIYUN_TRANSLATE_ERR,
+			ErrorMsg: "response not success. status:" + strconv.Itoa(response.GetHttpStatus()),
+		}
+	}
+	data := make(map[string]interface{})
+	json.Unmarshal(response.GetHttpContentBytes(), &data)
 	fmt.Println(data)
 	return http.StatusOK, entity.Response{
 		Code: 0,
