@@ -14,8 +14,14 @@ type UserInterface interface {
 	UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error
 }
 
+type PromptInterface interface {
+	InsertPrompt(prompt *model.PromptModel) error
+}
+
 // UserInterfaceImp 用户数据模型实现
 type UserInterfaceImp struct{}
+type PromptInterfaceImp struct{}
 
 // Imp 实现实例
 var UserImp UserInterface = &UserInterfaceImp{}
+var PromptImp PromptInterface = &PromptInterfaceImp{}

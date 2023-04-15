@@ -56,6 +56,11 @@ func UserHandler(router *gin.Engine) {
 		httpCode, result := translate(c)
 		c.JSON(httpCode, result)
 	})
+
+	router.POST("/api/savePrompt", func(c *gin.Context) {
+		httpCode, result := savePrompt(c)
+		c.JSON(httpCode, result)
+	})
 }
 
 func getOpenId(c *gin.Context) string {
@@ -357,5 +362,34 @@ func translate(c *gin.Context) (int, entity.Response) {
 	return http.StatusOK, entity.Response{
 		Code: 0,
 		Data: data,
+	}
+}
+
+func savePrompt(c *gin.Context) (int, entity.Response) {
+	var req entity.SavePromptRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	prompt := model.PromptModel{
+		Id:        uuid.New(),
+		UserId:    req.UserId,
+		Prompt:    req.Prompt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := dao.PromptImp.InsertPrompt(&prompt)
+	if err != nil {
+		return http.StatusOK, entity.Response{
+			Code:     utils.SERVER_DB_ERR,
+			ErrorMsg: err.Error(),
+		}
+	}
+	return http.StatusOK, entity.Response{
+		Code: 0,
+		Data: prompt,
 	}
 }

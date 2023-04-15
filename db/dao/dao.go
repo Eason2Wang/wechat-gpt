@@ -7,8 +7,7 @@ import (
 )
 
 const userTableName = "users"
-const counterTableName = "Counters"
-const reportTableName = "wechat_report"
+const promptTableName = "prompts"
 
 // GetUserList 查询UserList
 func (imp *UserInterfaceImp) GetUserList() ([]model.UserModel, error) {
@@ -50,4 +49,9 @@ func (imp *UserInterfaceImp) UpdateRemainUsage(openId string, usage int64) error
 func (imp *UserInterfaceImp) UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error {
 	cli := db.Get()
 	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"follow": follow, "subscribe": subscribe, "updated_at": time.Now()}).Error
+}
+
+func (imp *PromptInterfaceImp) InsertPrompt(prompt *model.PromptModel) error {
+	cli := db.Get()
+	return cli.Table(promptTableName).Save(prompt).Error
 }
