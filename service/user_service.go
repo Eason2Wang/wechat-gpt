@@ -524,9 +524,10 @@ func payCallback(c *gin.Context) (int, entity.PayCallbackResponse) {
 			if req.TotalFee == order.TotalFee {
 				mutex.Lock()
 				dao.OrderImp.UpdateOrderStatus(req.OutTradeNo, 0)
-				user, _ := dao.UserImp.GetUserByOpenId(req.Openid)
-				err = dao.UserImp.UpdateRemainUsage(req.Openid, user.RemainUsageCount+int64(order.TotalFee/10))
-				err = dao.UserImp.UpdateTotalUsage(req.Openid, user.TotalUsageCount+int64(order.TotalFee/10))
+				dao.OrderImp.UpdateOrderTransactionId(req.OutTradeNo, req.TransactionId)
+				user, _ := dao.UserImp.GetUserById(order.UserId)
+				dao.UserImp.UpdateRemainUsageByUserId(order.UserId, user.RemainUsageCount+int64(order.TotalFee/10))
+				dao.UserImp.UpdateTotalUsageByUserId(order.UserId, user.TotalUsageCount+int64(order.TotalFee/10))
 				mutex.Unlock()
 				fmt.Println("交易成功！")
 				return http.StatusOK, entity.PayCallbackResponse{

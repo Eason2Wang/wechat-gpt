@@ -8,10 +8,12 @@ import (
 type UserInterface interface {
 	GetUserList() ([]model.UserModel, error)
 	GetUserByOpenId(openId string) (*model.UserModel, error)
+	GetUserById(userId string) (*model.UserModel, error)
 	InsertUser(user *model.UserModel) error
 	UpdateNickNameAndAvatar(openId string, nickName string, avatar string) error
 	UpdateRemainUsage(openId string, usage int64) error
-	UpdateTotalUsage(openId string, usage int64) error
+	UpdateRemainUsageByUserId(userId string, usage int64) error
+	UpdateTotalUsageByUserId(userId string, usage int64) error
 	UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error
 }
 
@@ -23,6 +25,7 @@ type OrderInterface interface {
 	GetOrderByTradeNo(TradeNo string) (*model.OrderModel, error)
 	InsertOrder(order *model.OrderModel) error
 	UpdateOrderStatus(TradeNo string, Status int8) error
+	UpdateOrderTransactionId(TradeNo string, TransactionId string) error
 }
 
 // UserInterfaceImp 用户数据模型实现

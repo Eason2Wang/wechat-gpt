@@ -35,6 +35,15 @@ func (imp *UserInterfaceImp) GetUserByOpenId(openId string) (*model.UserModel, e
 	return user, err
 }
 
+func (imp *UserInterfaceImp) GetUserById(userId string) (*model.UserModel, error) {
+	var err error
+	var user = new(model.UserModel)
+
+	cli := db.Get()
+	err = cli.Table(userTableName).Where("id = ?", userId).First(user).Error
+	return user, err
+}
+
 func (imp *UserInterfaceImp) UpdateNickNameAndAvatar(openId string, nickName string, avatar string) error {
 	cli := db.Get()
 	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"nick_name": nickName, "avatar_url": avatar, "updated_at": time.Now()}).Error
@@ -45,9 +54,14 @@ func (imp *UserInterfaceImp) UpdateRemainUsage(openId string, usage int64) error
 	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"remain_usage_count": usage, "updated_at": time.Now()}).Error
 }
 
-func (imp *UserInterfaceImp) UpdateTotalUsage(openId string, usage int64) error {
+func (imp *UserInterfaceImp) UpdateRemainUsageByUserId(userId string, usage int64) error {
 	cli := db.Get()
-	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"total_usage_count": usage, "updated_at": time.Now()}).Error
+	return cli.Table(userTableName).Where("id = ?", userId).Updates(map[string]interface{}{"remain_usage_count": usage, "updated_at": time.Now()}).Error
+}
+
+func (imp *UserInterfaceImp) UpdateTotalUsageByUserId(userId string, usage int64) error {
+	cli := db.Get()
+	return cli.Table(userTableName).Where("id = ?", userId).Updates(map[string]interface{}{"total_usage_count": usage, "updated_at": time.Now()}).Error
 }
 
 func (imp *UserInterfaceImp) UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error {
@@ -77,4 +91,9 @@ func (imp *OrderInterfaceImp) GetOrderByTradeNo(TradeNo string) (*model.OrderMod
 func (imp *OrderInterfaceImp) UpdateOrderStatus(TradeNo string, Status int8) error {
 	cli := db.Get()
 	return cli.Table(orderTableName).Where("out_trade_no = ?", TradeNo).Updates(map[string]interface{}{"status": Status, "updated_at": time.Now()}).Error
+}
+
+func (imp *OrderInterfaceImp) UpdateOrderTransactionId(TradeNo string, TransactionId string) error {
+	cli := db.Get()
+	return cli.Table(orderTableName).Where("out_trade_no = ?", TradeNo).Updates(map[string]interface{}{"transaction_id": TransactionId, "updated_at": time.Now()}).Error
 }
