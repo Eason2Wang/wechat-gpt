@@ -528,7 +528,7 @@ func payCallback(c *gin.Context) (int, entity.PayCallbackResponse) {
 				fmt.Println("交易成功！")
 				return http.StatusOK, entity.PayCallbackResponse{
 					ErrCode: utils.SUCCESS,
-					ErrMsg:  req.ReturnMsg,
+					ErrMsg:  req.ResultCode,
 				}
 			} else {
 				mutex.Lock()
@@ -544,17 +544,17 @@ func payCallback(c *gin.Context) (int, entity.PayCallbackResponse) {
 			mutex.Lock()
 			dao.OrderImp.UpdateOrderStatus(req.OutTradeNo, 1)
 			mutex.Unlock()
-			fmt.Println("callback ResultCode失败:", req.ErrCodeDes)
+			fmt.Println("callback ResultCode失败:", req.ResultCode)
 			return http.StatusOK, entity.PayCallbackResponse{
 				ErrCode: utils.Failure,
-				ErrMsg:  req.ErrCodeDes,
+				ErrMsg:  req.ResultCode,
 			}
 		}
 	} else {
-		fmt.Println("callback ReturnCode失败:", req.ReturnMsg)
+		fmt.Println("callback ReturnCode失败:", req.ReturnCode)
 		return http.StatusOK, entity.PayCallbackResponse{
 			ErrCode: utils.Failure,
-			ErrMsg:  req.ReturnMsg,
+			ErrMsg:  req.ReturnCode,
 		}
 	}
 }
