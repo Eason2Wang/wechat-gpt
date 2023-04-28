@@ -45,6 +45,11 @@ func (imp *UserInterfaceImp) UpdateRemainUsage(openId string, usage int64) error
 	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"remain_usage_count": usage, "updated_at": time.Now()}).Error
 }
 
+func (imp *UserInterfaceImp) UpdateTotalUsage(openId string, usage int64) error {
+	cli := db.Get()
+	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"total_usage_count": usage, "updated_at": time.Now()}).Error
+}
+
 func (imp *UserInterfaceImp) UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error {
 	cli := db.Get()
 	return cli.Table(userTableName).Where("open_id = ?", openId).Updates(map[string]interface{}{"follow": follow, "subscribe": subscribe, "updated_at": time.Now()}).Error

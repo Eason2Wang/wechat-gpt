@@ -11,6 +11,7 @@ type UserInterface interface {
 	InsertUser(user *model.UserModel) error
 	UpdateNickNameAndAvatar(openId string, nickName string, avatar string) error
 	UpdateRemainUsage(openId string, usage int64) error
+	UpdateTotalUsage(openId string, usage int64) error
 	UpdateFollowAndSubscribe(openId string, follow uint, subscribe uint) error
 }
 
