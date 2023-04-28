@@ -508,6 +508,7 @@ func payCallback(c *gin.Context) (int, entity.PayCallbackResponse) {
 			ErrMsg:  err.Error(),
 		}
 	}
+	fmt.Println("callback参数：", req)
 	mutex.RLock() // 加读锁
 	order, err := dao.OrderImp.GetOrderByTradeNo(req.OutTradeNo)
 	mutex.RUnlock() // 释放读锁
