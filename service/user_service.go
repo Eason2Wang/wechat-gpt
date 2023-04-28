@@ -425,10 +425,10 @@ func unifiedOrder(c *gin.Context) (int, entity.Response) {
 	params := make(map[string]interface{})
 	params["callback_type"] = 2
 	params["env_id"] = "prod-7g96cjuxd039a0e4"
-	params["function_name"] = "payCallback"
+	// params["function_name"] = "payCallback"
 	container := make(map[string]interface{})
-	container["service"] = "payCallback"
-	container["path"] = "/api/"
+	container["service"] = "paycallback"
+	container["path"] = "/api/payCallback"
 	params["container"] = container
 	params["sub_mch_id"] = "1642970169"
 	params["nonce_str"] = utils.RandomString(32)
