@@ -1,11 +1,14 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 	"wechat-gpt/db/dao"
 	"wechat-gpt/db/model"
@@ -59,6 +62,16 @@ func UserHandler(router *gin.Engine) {
 
 	router.POST("/api/savePrompt", func(c *gin.Context) {
 		httpCode, result := savePrompt(c)
+		c.JSON(httpCode, result)
+	})
+
+	router.POST("/api/unifiedOrder", func(c *gin.Context) {
+		httpCode, result := unifiedOrder(c)
+		c.JSON(httpCode, result)
+	})
+
+	router.POST("/api/payCallback", func(c *gin.Context) {
+		httpCode, result := payCallback(c)
 		c.JSON(httpCode, result)
 	})
 }
@@ -391,5 +404,156 @@ func savePrompt(c *gin.Context) (int, entity.Response) {
 	return http.StatusOK, entity.Response{
 		Code: 0,
 		Data: prompt,
+	}
+}
+
+func unifiedOrder(c *gin.Context) (int, entity.Response) {
+	var req entity.UnifiedOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.Response{
+			Code:     utils.SERVER_MISSING_PARAMS,
+			ErrorMsg: err.Error(),
+		}
+	}
+	header := c.Request.Header
+	var openid string
+	if header["X-Wx-From-Openid"] != nil {
+		openid = header["X-Wx-From-Openid"][0]
+	} else if header["X-Wx-Openid"] != nil {
+		openid = header["X-Wx-Openid"][0]
+	}
+	params := make(map[string]interface{})
+	params["callback_type"] = 2
+	params["env_id"] = "prod-7g96cjuxd039a0e4"
+	params["function_name"] = "payCallback"
+	container := make(map[string]interface{})
+	container["service"] = "payCallback"
+	container["path"] = "/api/"
+	params["container"] = container
+	params["sub_mch_id"] = "1642970169"
+	params["nonce_str"] = utils.RandomString(32)
+	params["body"] = req.Body
+	outTradeNo := utils.GenerateOrderNoByTime()
+	params["out_trade_no"] = outTradeNo
+	params["total_fee"] = req.TotalFee
+	ip := header["X-Original-Forwarded-For"][0]
+	params["spbill_create_ip"] = ip
+	params["trade_type"] = "JSAPI"
+	params["openid"] = openid
+
+	// 先插入数据库
+	order := model.OrderModel{
+		Id:             uuid.New(),
+		UserId:         req.UserId,
+		OpenId:         openid,
+		OutTradeNo:     outTradeNo,
+		TotalFee:       req.TotalFee,
+		SpbillCreateIp: ip,
+		Status:         -1,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	err := dao.OrderImp.InsertOrder(&order)
+	if err != nil {
+		return http.StatusInternalServerError, entity.Response{
+			Code:     utils.SERVER_DB_ERR,
+			ErrorMsg: err.Error(),
+		}
+	}
+
+	bytesData, _ := json.Marshal(params)
+	resp, err := http.Post(
+		"http://api.weixin.qq.com/_/pay/unifiedorder",
+		"application/json",
+		bytes.NewReader(bytesData),
+	)
+	if err != nil {
+		return http.StatusInternalServerError, entity.Response{
+			Code:     utils.Failure,
+			ErrorMsg: err.Error(),
+		}
+	}
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("请求失败: %s", resp.Body)
+		return http.StatusInternalServerError, entity.Response{
+			Code:     utils.Failure,
+			ErrorMsg: err.Error(),
+		}
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		err = fmt.Errorf("请求失败: %s", err)
+		return http.StatusInternalServerError, entity.Response{
+			Code:     utils.Failure,
+			ErrorMsg: err.Error(),
+		}
+	}
+	data := make(map[string]interface{})
+	json.Unmarshal(body, &data)
+	fmt.Println("请求成功: ", data)
+	return http.StatusOK, entity.Response{
+		Code: 0,
+		Data: data,
+	}
+}
+
+var mutex sync.RWMutex
+
+func payCallback(c *gin.Context) (int, entity.PayCallbackResponse) {
+	var req entity.PayCallbackRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return http.StatusBadRequest, entity.PayCallbackResponse{
+			ErrCode: utils.SERVER_MISSING_PARAMS,
+			ErrMsg:  err.Error(),
+		}
+	}
+	mutex.RLock() // 加读锁
+	order, err := dao.OrderImp.GetOrderByTradeNo(req.OutTradeNo)
+	mutex.RUnlock() // 释放读锁
+	if err != nil {
+		fmt.Println("获取数据库订单失败: ", err.Error())
+		return http.StatusOK, entity.PayCallbackResponse{
+			ErrCode: utils.SERVER_DB_ERR,
+			ErrMsg:  err.Error(),
+		}
+	}
+	if req.ReturnCode == "SUCCESS" {
+		if req.ResultCode == "SUCCESS" {
+			if req.TotalFee == order.TotalFee {
+				mutex.Lock()
+				dao.OrderImp.UpdateOrderStatus(req.OutTradeNo, 0)
+				mutex.Unlock()
+				fmt.Println("交易成功！")
+				return http.StatusOK, entity.PayCallbackResponse{
+					ErrCode: utils.SUCCESS,
+					ErrMsg:  req.ReturnMsg,
+				}
+			} else {
+				mutex.Lock()
+				dao.OrderImp.UpdateOrderStatus(req.OutTradeNo, 1)
+				mutex.Unlock()
+				fmt.Println("返回金额与数据库金额不一致")
+				return http.StatusOK, entity.PayCallbackResponse{
+					ErrCode: utils.Failure,
+					ErrMsg:  "返回金额与数据库金额不一致",
+				}
+			}
+		} else {
+			mutex.Lock()
+			dao.OrderImp.UpdateOrderStatus(req.OutTradeNo, 1)
+			mutex.Unlock()
+			fmt.Println("callback ResultCode失败:", req.ErrCodeDes)
+			return http.StatusOK, entity.PayCallbackResponse{
+				ErrCode: utils.Failure,
+				ErrMsg:  req.ErrCodeDes,
+			}
+		}
+	} else {
+		fmt.Println("callback ReturnCode失败:", req.ReturnMsg)
+		return http.StatusOK, entity.PayCallbackResponse{
+			ErrCode: utils.Failure,
+			ErrMsg:  req.ReturnMsg,
+		}
 	}
 }

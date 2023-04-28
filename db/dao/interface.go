@@ -18,10 +18,18 @@ type PromptInterface interface {
 	InsertPrompt(prompt *model.PromptModel) error
 }
 
+type OrderInterface interface {
+	GetOrderByTradeNo(TradeNo string) (*model.OrderModel, error)
+	InsertOrder(order *model.OrderModel) error
+	UpdateOrderStatus(TradeNo string, Status int8) error
+}
+
 // UserInterfaceImp 用户数据模型实现
 type UserInterfaceImp struct{}
 type PromptInterfaceImp struct{}
+type OrderInterfaceImp struct{}
 
 // Imp 实现实例
 var UserImp UserInterface = &UserInterfaceImp{}
 var PromptImp PromptInterface = &PromptInterfaceImp{}
+var OrderImp OrderInterface = &OrderInterfaceImp{}

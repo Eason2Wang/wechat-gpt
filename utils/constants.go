@@ -1,6 +1,7 @@
 package utils
 
 const SUCCESS int = 0
+const Failure int = 1
 const USER_NOT_FOUNT int = 10000
 const SERVER_MISSING_PARAMS int = 10001
 const WECHAT_RESPONSE_ERR int = 10002
